@@ -11,12 +11,17 @@ import { BackendLifecycleChip } from '@/components/settings/BackendLifecycleChip
 import { frames, type FrameSpec } from '../../frame';
 import { ElevationProposal } from '../../kit/elevation/ElevationProposal';
 import { ElevationSheet } from '../../kit/elevation/ElevationSheet';
+import { pick, proposed } from '../../kit/elevation/pairs';
 import agentDialogs from '../agents/dialogs.design';
 import agentsPage from '../agents/agents-page.design';
 import dock from '../apps/dock.design';
 import chatComposer from '../chat/composer.design';
 import chatConversation from '../chat/conversation.design';
 import home from '../home/home.design';
+import appsLibrary from '../apps/library.design';
+import botConversation from '../mobile/bot-conversation.design';
+import searchPalette from '../search/search-palette.design';
+import settingsGeneral from '../settings/general.design';
 import inboxPage from '../inbox/inbox-page.design';
 import appsDrawer from '../mobile/apps-drawer.design';
 import workbenchTab from '../mobile/workbench-tab.design';
@@ -27,23 +32,11 @@ import { RUNTIMES } from '../models/backends.fixtures';
 import overlays from './overlays.design';
 import { systemFixtures } from './fixtures';
 
-const shipped = (file: string, specs: FrameSpec[], state: string): FrameSpec => {
-  const spec = specs.find((candidate) => candidate.name === state);
-  if (!spec) throw new Error(`no frame ${file}/${state}`);
-  return spec;
-};
+const shipped = pick;
 
 /** The shipped frame `<file>/<state>`, drawn under the proposal. */
-const after = (name: string, file: string, specs: FrameSpec[], state: string): FrameSpec => {
-  const spec = shipped(file, specs, state);
-  return {
-    ...spec,
-    name,
-    title: `提案 · ${spec.title}（对照 ${file}/${state}）`,
-    status: 'proposed',
-    render: () => <ElevationProposal>{spec.render()}</ElevationProposal>,
-  };
-};
+const after = (name: string, file: string, specs: FrameSpec[], state: string): FrameSpec =>
+  proposed(shipped(file, specs, state), name, 'v1', `${file}/${state}`);
 
 // A toast over content: the shipped toast frame raises one over an empty page, where a see-through
 // fill cannot show. The same trigger, with a page of transcript-like text under the toast's corner.
@@ -73,7 +66,7 @@ const toastFrame = {
 // hover in Light. `before` is the shipped frame with that state added; `after` adds the proposal.
 const variant = (spec: FrameSpec, name: string, title: string, extra: Partial<FrameSpec>): [FrameSpec, FrameSpec] => {
   const before: FrameSpec = { ...spec, ...extra, name: `${name}-before`, title: `现状 · ${title}`, status: 'shipped' };
-  return [before, { ...before, name, title: `提案 · ${title}（对照 system/elevation/${name}-before）`, status: 'proposed', render: () => <ElevationProposal>{spec.render()}</ElevationProposal> }];
+  return [before, proposed(before, name, 'v1', `system/elevation/${name}-before`)];
 };
 const mainOpen = shipped('sidebar/bots', sidebarBots, 'main-open');
 const reviewFrames: FrameSpec[] = [
@@ -113,6 +106,9 @@ const designFrames = frames([
   after('context-menu', 'system/overlays', overlays, 'context-menu'),
   after('popover', 'system/overlays', overlays, 'popover'),
   after('dialog', 'system/overlays', overlays, 'dialog'),
+  after('apps-library', 'apps/library', appsLibrary, 'apps'),
+  after('settings-general', 'settings/general', settingsGeneral, 'default'),
+  after('search-palette', 'search/search-palette', searchPalette, 'open'),
   { name: 'toast-before', title: '现状 · 提示条盖在内容上', status: 'shipped', ...toastFrame, render: toastOverContent },
   {
     name: 'toast',
@@ -125,6 +121,7 @@ const designFrames = frames([
   // Phone.
   after('phone-inbox', 'inbox/inbox-page', inboxPage, 'phone'),
   after('phone-chat', 'chat/conversation', chatConversation, 'phone'),
+  after('phone-chat-running', 'mobile/bot-conversation', botConversation, 'main-running'),
   after('phone-tabbar', 'mobile/workbench-tab', workbenchTab, 'team'),
   after('phone-tabbar-member', 'mobile/workbench-tab', workbenchTab, 'member'),
   after('phone-tabbar-recording', 'mobile/workbench-tab', workbenchTab, 'hold-main-recording'),

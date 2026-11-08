@@ -1,8 +1,10 @@
 # Elevation, state, and glow: one system for the Web UI
 
-Status: proposal (2026-11-08), awaiting owner decisions. No product code changes yet.
-Frames: `ui/design/frames/system/elevation.design.tsx` (`system/elevation/*`), rules and proposed
-tokens in `ui/design/kit/elevation/elevation.css`.
+Status: proposal v2 (2026-11-08), awaiting owner decisions. No product code changes yet.
+Frames: v1 `ui/design/frames/system/elevation.design.tsx` (`system/elevation/*`); v2
+`ui/design/frames/system/elevation-v2.design.tsx` (`system/elevation-v2/a-*` restrained, `b-*`
+expressive). Rules and proposed tokens: `ui/design/kit/elevation/elevation.css` (v1) and
+`elevation-v2.css` (v2, layered on v1).
 
 ## Background
 
@@ -59,7 +61,62 @@ accent (dots: 6px at 60% in Light). Decorative glows (icon tiles, logo, eyebrow,
 in Dark and are dropped in Light. Removed: every state glow listed above, the card washes, the
 new-session button's extra drop shadow.
 
-## Decisions needed
+## v2: edges designed with elevation, and freshness (owner feedback, 2026-11-08)
+
+The owner: opaque grey borders (the input's especially) look dated; a faint shadow beside a
+conspicuous border looks cheap; with the glows cut, the UI risks reading flat and dated.
+
+**Edges.** No opaque border on a resting card, panel, row, input, soft button, or floating surface.
+
+| Surface | v2 |
+| --- | --- |
+| Card, panel, row | Transparent border. Light: `0 0 0 1px ink/.04` plus a soft ambient tinted with the brand's deep teal (`rgb(10 52 44)`); Dark: `0 0 0 1px white/.06` plus a 1px top highlight (`inset 0 1px 0 white/.05`). A card drawn on the page colour takes `--surface`, so its fill separates it. |
+| Input, select, textarea, search | Filled (`ink/.045` Light, `white/.05` Dark), no border or shadow; fill deepens on hover; focus is the ring. |
+| Outline/secondary button, small bordered action, chip | The same fill, no outline. |
+| Floating and overlay | No border; the ring lives in the level's shadow (`ink/.07` Light, `white/.1` plus top highlight Dark). |
+| Kept | Selected, focus, error, the dashed "add", table and list dividers. |
+
+Borders stay in the DOM as transparent, so forced-colours mode still paints them, and
+`prefers-contrast: more` brings them back at a visible strength.
+
+**Freshness**, two levels:
+
+| Technique | v2a restrained | v2b expressive |
+| --- | --- | --- |
+| Light shadow colour | brand-tinted instead of grey | same |
+| Dark lifted surfaces | top highlight | same |
+| Composer | soft edge, mint ring on focus | gradient hairline (mint, cyan, violet) |
+| First card on Home | as other cards | gradient hairline, mint ambient |
+| Agent working | composer edge turns mint | a light sweeps the composer edge (2.8s); still under reduced motion |
+| Glass | phone tab bar | plus menus, popovers, toasts |
+| Brand light in Light | none | unread cards and decorative tiles get a same-hue soft shadow instead of a neon halo |
+
+Glass falls back to the opaque surface under `prefers-reduced-transparency` or without
+`backdrop-filter`. The Dock stays opaque: it scrolls horizontally, and Chromium does not clip a
+scroll container's backdrop to its radius, so its glass needs a non-scrolling wrapper first.
+
+Recommendation: v2a plus three items from v2b (composer gradient hairline, the working sweep, the
+Light same-hue soft shadows); glass menus add little over plain backgrounds and cost legibility over
+text and GPU.
+
+Accessibility: text colours do not change. With borderless inputs the focus ring becomes the main
+focus cue; the Light ring is brand mint at 50% (~1.5:1, owner decision 2026-08-14). Proposed: the
+same brand value opaque (~2.5:1), value unchanged.
+
+## Decisions needed (v2)
+
+1. Base: v1's four levels plus v2's edges. (Recommended: adopt.)
+2. Freshness: A v2a / B v2b / C v2a plus composer hairline, working sweep, Light soft shadows.
+   (Recommended: C.)
+3. Dark `--popover` one step lighter. (Recommended: adopt.)
+4. Unread: no halo on Inbox cards, stronger mint edge; no left stripe on popover rows.
+   (Recommended: adopt.)
+5. Owner-approved lights unchanged (brand CTA, selected Bot, live mic, onboarding halo). Confirm.
+6. Light focus ring opaque in the same brand value. (Recommended: adopt.)
+7. Other fixes: 1, 2, 3, 4, 5, 7, 12 (recommended); with borderless rows, hover fill is the only
+   hover cue, which makes fix 1 more important.
+
+## Decisions needed (v1, superseded by the v2 list)
 
 1. Approve the four levels and their Light/Dark values.
 2. Lift Dark `--popover` one step and give every floating surface `border-strong`.
@@ -88,11 +145,14 @@ new-session button's extra drop shadow.
 
 ## Implementation (after decisions)
 
-1. Tokens and primitives: elevation tokens per palette and `shadow-elevation-*` utilities; Dark
-   `--popover`; Popover, ResponsiveMenu, ContextMenu, Dialog, Toast, `field.ts`, outline button,
-   switch. Update `system/shape` frames and `glowScale.test.mjs`. Covers most surfaces.
-2. Call sites: bespoke literals to levels; state glows to fill/border; card washes to flat.
-3. Glow policy: theme-following dot and voice glows; decorative glows Dark-only; new-session button.
+1. Tokens and primitives: elevation and edge tokens per palette (`--elevation-*`, `--edge*`,
+   `--field`) and utilities; Dark `--popover`; Card/Panel, `field.ts` inputs, outline/secondary
+   buttons, Popover, ResponsiveMenu, ContextMenu, Dialog, Toast, switch, segmented control. Update
+   `system/shape` frames and `glowScale.test.mjs`. Covers most surfaces.
+2. Call sites: ~150 hand-written `rounded + border-border + bg-surface` cards and bespoke shadow
+   literals onto the primitives or tokens; state glows to fill/border; card washes to the edge.
+3. Freshness at the chosen level, with reduced-motion, reduced-transparency, and more-contrast
+   fallbacks and tests; theme-following dot and voice glows; new-session button.
 4. Each chosen "other fix" as its own small PR.
 
 On approval the frames move to `approved`, the tokens move from the kit into `src/index.css`, and the

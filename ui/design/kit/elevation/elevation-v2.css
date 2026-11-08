@@ -1,0 +1,278 @@
+/* Proposal v2 (ui/design: system/elevation-v2/*), on top of v1 (./elevation.css). Not shipped.
+ *
+ * The owner's feedback on v1 (2026-11-08): opaque grey borders (an input's especially) look dated,
+ * a faint shadow beside a conspicuous border looks cheap, and with the glows cut the UI risks
+ * reading flat. v2 designs the edge together with the elevation:
+ *
+ * - Edge: no opaque border on a resting card, panel, input, button, or floating surface. A card's
+ *   edge is its fill against the page plus a low-alpha ring drawn inside the elevation shadow
+ *   (Light: ink at 5%, with a soft tinted ambient; Dark: a white hairline at 7% and a top highlight,
+ *   the surface lit from above). Inputs and soft buttons are filled and borderless; focus is a ring.
+ *   Borders stay where they mean something: selected, focus, error, the dashed "add", dividers.
+ * - Freshness: Light shadows take a deep brand tint instead of grey; Dark lifted surfaces get a top
+ *   highlight; the phone tab bar is glass. That is v2a. v2b adds glass to every
+ *   floating surface, a gradient hairline on the hero surfaces (the composer, the first card on
+ *   Home), an "alive" sweep around the composer while an Agent works, and in Light the brand light
+ *   comes back as a tinted soft shadow (unread cards, decorative tiles) instead of a neon halo.
+ *
+ * Gates: `[data-elevation-proposal^='v2']` for both, `='v2b'` for the expressive layer. Rules set
+ * `--tw-shadow` and recompose Tailwind's box-shadow, so focus rings on the same element survive. */
+
+@property --elevation-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Tokens. Per theme, on the root and on any element that re-declares the theme (the frame root). */
+:root[data-theme='dark']:has([data-elevation-proposal^='v2']),
+:root:has([data-elevation-proposal^='v2']) [data-theme='dark'] {
+  --edge: rgb(255 255 255 / 0.06);
+  --edge-strong: rgb(255 255 255 / 0.1);
+  --edge-highlight: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --field: rgb(255 255 255 / 0.05);
+  --field-hover: rgb(255 255 255 / 0.075);
+  --edge-card: var(--edge-highlight), 0 0 0 1px var(--edge);
+  --elevation-1: var(--edge-highlight), 0 0 0 1px var(--edge), 0 1px 2px rgb(0 0 0 / 0.45);
+  --elevation-2: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px var(--edge-strong), 0 2px 6px -2px rgb(0 0 0 / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  --elevation-3: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px var(--edge-strong), 0 4px 12px -4px rgb(0 0 0 / 0.5), 0 24px 64px -12px rgb(0 0 0 / 0.7);
+  --elevation-3-up: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 -2px 8px -4px rgb(0 0 0 / 0.4), 0 -16px 40px -12px rgb(0 0 0 / 0.6);
+  --composer-edge: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.09), 0 10px 28px -12px rgb(0 0 0 / 0.7);
+  --composer-focus: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px color-mix(in srgb, var(--mint) 45%, transparent), 0 10px 28px -12px rgb(0 0 0 / 0.7);
+  --brand-light: inset 0 1px 0 color-mix(in srgb, var(--mint) 22%, transparent), 0 10px 30px -14px color-mix(in srgb, var(--mint) 32%, transparent);
+  --glass-alpha: 76%;
+}
+:root[data-theme='light']:has([data-elevation-proposal^='v2']),
+:root:has([data-elevation-proposal^='v2']) [data-theme='light'] {
+  /* The brand's deep teal (the light mint mixed into the ink): shadows take it instead of grey. */
+  --tint: 10 52 44;
+  --edge: rgb(8 8 18 / 0.04);
+  --edge-strong: rgb(8 8 18 / 0.07);
+  --edge-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  --field: rgb(8 8 18 / 0.045);
+  --field-hover: rgb(8 8 18 / 0.07);
+  --edge-card: 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--tint) / 0.05), 0 4px 14px -6px rgb(var(--tint) / 0.08);
+  --elevation-1: 0 0 0 1px var(--edge), 0 1px 3px rgb(var(--tint) / 0.08);
+  --elevation-2: 0 0 0 1px var(--edge-strong), 0 2px 6px -2px rgb(var(--tint) / 0.08), 0 12px 32px -8px rgb(var(--tint) / 0.16);
+  --elevation-3: 0 0 0 1px var(--edge-strong), 0 4px 12px -4px rgb(var(--tint) / 0.1), 0 28px 64px -16px rgb(var(--tint) / 0.24);
+  --elevation-3-up: 0 -1px 0 var(--edge-strong), 0 -12px 32px -12px rgb(var(--tint) / 0.16);
+  --composer-edge: 0 0 0 1px var(--edge), 0 1px 2px rgb(var(--tint) / 0.05), 0 10px 28px -12px rgb(var(--tint) / 0.18);
+  --composer-focus: 0 0 0 1px color-mix(in srgb, var(--mint) 50%, transparent), 0 1px 2px rgb(var(--tint) / 0.05), 0 10px 28px -12px color-mix(in srgb, var(--mint) 35%, transparent);
+  --brand-light: 0 10px 26px -12px color-mix(in srgb, var(--mint) 45%, transparent);
+  --glass-alpha: 74%;
+}
+
+@layer elevation-proposal.v2-surface, elevation-proposal.v2-controls, elevation-proposal.v2-floating, elevation-proposal.v2-hero, elevation-proposal.v2-state;
+
+/* ------------------------------------------------------------------------------------------------
+ * Resting cards and panels: the border goes; the edge is the fill plus the card edge.
+ * ---------------------------------------------------------------------------------------------- */
+@layer elevation-proposal.v2-surface {
+  :root:has([data-elevation-proposal^='v2']) [class~='border']:is([class~='border-border'], [class~='border-border-strong'])[class*='rounded']:not([class~='border-dashed'], [class~='rounded-full'], [class*='shadow-']) {
+    border-color: transparent;
+    --tw-shadow: var(--edge-card);
+    box-shadow: var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  }
+  /* A card sits one step above what holds it: a card drawn on the page colour (a settings panel)
+     takes the surface, so its fill, not a line, separates it. */
+  :root:has([data-elevation-proposal^='v2']) [class~='border'][class~='bg-background']:is([class~='border-border'], [class~='border-border-strong'])[class*='rounded']:not([class~='border-dashed'], [class~='rounded-full'], button, a) {
+    background-color: var(--surface);
+  }
+  /* Cards v1 took to level 0 (the card washes, the heavy black on resting cards) keep an edge. */
+  :root:has([data-elevation-proposal^='v2']) :is(
+    [class~='shadow-mint-card-sm'],
+    [class~='shadow-mint-card'],
+    [class~='shadow-mint-card-lg'],
+    [class~='shadow-[0_18px_40px_-30px_rgba(0,0,0,0.8)]'],
+    [class~='shadow-[0_16px_32px_-8px_rgba(91,255,160,0.078)]'],
+    [class~='shadow-[0_24px_48px_-30px_rgba(91,255,160,0.20)]']
+  ) {
+    border-color: transparent;
+    --tw-shadow: var(--edge-card);
+  }
+  /* Anything else with a neutral border and a level: the level's shadow carries the ring. */
+  :root:has([data-elevation-proposal^='v2']) [class~='border']:is([class~='border-border'], [class~='border-border-strong'])[class*='shadow-']:not([class~='border-dashed']) {
+    border-color: transparent;
+  }
+  /* Pills and chips: filled, no outline. */
+  :root:has([data-elevation-proposal^='v2']) [class~='border'][class~='rounded-full']:is([class~='border-border'], [class~='border-border-strong']):not([class~='border-dashed']) {
+    border-color: transparent;
+    background-color: var(--field);
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Controls: inputs and soft buttons are filled at rest; focus is the ring they already draw.
+ * ---------------------------------------------------------------------------------------------- */
+@layer elevation-proposal.v2-controls {
+  :root:has([data-elevation-proposal^='v2']) :is([class~='border-input'], :is(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea)[class~='border']) {
+    border-color: transparent;
+    background-color: var(--field);
+    --tw-shadow: 0 0 #0000;
+  }
+  :root:has([data-elevation-proposal^='v2']) :is([class~='border-input'], :is(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea)[class~='border']):hover:not(:focus-visible, :disabled) {
+    background-color: var(--field-hover);
+  }
+  /* A small bordered button (a chip-sized action, a menu trigger) is a soft button. A card-sized one
+     (rounded-xl and up: a list row, an option tile) stays a card. */
+  :root:has([data-elevation-proposal^='v2']) :is(button, a, [role='button'])[class~='border']:is([class~='border-border'], [class~='border-border-strong']):is([class~='rounded'], [class~='rounded-md'], [class~='rounded-lg'], [class~='rounded-[9px]'], [class~='rounded-[10px]']):not([class~='border-dashed']) {
+    border-color: transparent;
+    background-color: var(--field);
+    --tw-shadow: 0 0 #0000;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000);
+  }
+  :root:has([data-elevation-proposal^='v2']) :is(button, a, [role='button'])[class~='border']:is([class~='border-border'], [class~='border-border-strong']):is([class~='rounded'], [class~='rounded-md'], [class~='rounded-lg'], [class~='rounded-[9px]'], [class~='rounded-[10px]']):not([class~='border-dashed']):hover:not(:disabled) {
+    background-color: var(--field-hover);
+    background-image: none;
+  }
+  /* Outline and secondary buttons become soft: a filled chip, no outline. */
+  :root:has([data-elevation-proposal^='v2']) :is([class~='shadow-[0_1px_2px_rgba(0,0,0,0.05)]'], [class~='bg-secondary'][class~='border-border']) {
+    border-color: transparent;
+    background-color: var(--field);
+    --tw-shadow: 0 0 #0000;
+  }
+  :root:has([data-elevation-proposal^='v2']) :is([class~='shadow-[0_1px_2px_rgba(0,0,0,0.05)]'], [class~='bg-secondary'][class~='border-border']):hover:not(:disabled) {
+    background-color: var(--field-hover);
+    background-image: none;
+  }
+  /* Segmented controls: a filled track. */
+  :root:has([data-elevation-proposal^='v2']) [role='radiogroup'][class~='border'][class~='border-border'] {
+    border-color: transparent;
+    background-color: var(--field);
+    box-shadow: none;
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Floating and overlay surfaces: the ring is in the level's shadow; no border. v2a makes the phone
+ * tab bar and the Dock glass; v2b makes every floating surface glass.
+ * ---------------------------------------------------------------------------------------------- */
+@layer elevation-proposal.v2-floating {
+  :root:has([data-elevation-proposal^='v2']) :is(
+    .motion-popover,
+    .motion-dialog,
+    .motion-card,
+    [role='menu'][class*='shadow-'],
+    [role='listbox'][class*='shadow-'],
+    [role='status'][class~='shadow-lg'],
+    [class~='shadow-[0_32px_80px_-16px_rgba(0,0,0,0.75)]']
+  ) {
+    border-color: transparent;
+  }
+  :root:has([data-elevation-proposal^='v2']) .motion-sheet {
+    border-color: transparent;
+  }
+  /* The Dock stays opaque here: it scrolls sideways, and Chromium does not clip a scroll
+     container's backdrop to its radius, so its glass needs a non-scrolling wrapper first. */
+  :root:has([data-elevation-proposal^='v2']) [data-mobile-tab-bar] {
+    background-color: color-mix(in srgb, var(--surface) var(--glass-alpha), transparent);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+  :root:has([data-elevation-proposal='v2b']) :is(
+    .motion-popover:not([class*='border-gold']),
+    [role='menu'][class*='shadow-'],
+    [role='listbox'][class*='shadow-'],
+    [role='status'][class~='shadow-lg']
+  ) {
+    background-color: color-mix(in srgb, var(--popover) var(--glass-alpha), transparent);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+  }
+  /* No blur, or the user asked for less transparency: the opaque surface it stands in for. */
+  @media (prefers-reduced-transparency: reduce) {
+    :root:has([data-elevation-proposal^='v2']) :is([data-mobile-tab-bar], .motion-popover, [role='menu'], [role='listbox'], [role='status']) {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: var(--popover);
+    }
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root:has([data-elevation-proposal^='v2']) :is([data-mobile-tab-bar], .motion-popover, [role='menu'], [role='listbox'], [role='status']) {
+      background-color: var(--popover);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Hero surfaces: the composer, and in v2b the first card on Home.
+ * ---------------------------------------------------------------------------------------------- */
+@layer elevation-proposal.v2-hero {
+  :root:has([data-elevation-proposal^='v2']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]'] {
+    border-color: transparent;
+    --tw-shadow: var(--composer-edge);
+  }
+  :root:has([data-elevation-proposal^='v2']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]']:focus-within {
+    --tw-shadow: var(--composer-focus);
+  }
+  /* v2a, an Agent at work: the composer's edge turns mint. */
+  :root:has([data-elevation-proposal='v2a']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]']:has(button[class~='bg-pink/15']) {
+    --tw-shadow: var(--composer-focus);
+  }
+
+  /* v2b: a gradient hairline (mint, cyan, violet) drawn as the border. */
+  :root:has([data-elevation-proposal='v2b']) :is([class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]'], [class~='shadow-mint-card-sm'][class~='bg-surface']) {
+    --hairline-fill: var(--surface-2);
+    border-color: transparent;
+    background:
+      linear-gradient(var(--hairline-fill), var(--hairline-fill)) padding-box,
+      linear-gradient(120deg, color-mix(in srgb, var(--mint) 60%, transparent), color-mix(in srgb, var(--cyan) 45%, transparent) 50%, color-mix(in srgb, var(--violet) 45%, transparent)) border-box;
+  }
+  :root:has([data-elevation-proposal='v2b']) [class~='shadow-mint-card-sm'][class~='bg-surface'] {
+    --hairline-fill: var(--surface);
+    background:
+      linear-gradient(var(--hairline-fill), var(--hairline-fill)) padding-box,
+      linear-gradient(120deg, color-mix(in srgb, var(--mint) 40%, transparent), color-mix(in srgb, var(--cyan) 28%, transparent) 55%, transparent) border-box;
+    --tw-shadow: 0 10px 30px -16px color-mix(in srgb, var(--mint) 30%, transparent);
+  }
+  :root:has([data-elevation-proposal='v2b']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]'] {
+    --tw-shadow: var(--composer-edge);
+  }
+  /* v2b, an Agent at work: light sweeps around the composer's edge. Reduced motion: it holds still. */
+  :root:has([data-elevation-proposal='v2b']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]']:has(button[class~='bg-pink/15']) {
+    background:
+      linear-gradient(var(--hairline-fill), var(--hairline-fill)) padding-box,
+      conic-gradient(from var(--elevation-sweep), transparent 0deg, color-mix(in srgb, var(--mint) 85%, transparent) 60deg, color-mix(in srgb, var(--cyan) 70%, transparent) 110deg, transparent 170deg, transparent 360deg) border-box,
+      linear-gradient(color-mix(in srgb, var(--mint) 25%, transparent), color-mix(in srgb, var(--mint) 25%, transparent)) border-box;
+    --tw-shadow: var(--composer-focus);
+    animation: elevation-sweep 2.8s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root:has([data-elevation-proposal='v2b']) [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]']:has(button[class~='bg-pink/15']) {
+      animation: none;
+      --elevation-sweep: 200deg;
+    }
+  }
+}
+@keyframes elevation-sweep {
+  to { --elevation-sweep: 360deg; }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * v2b: in Light, the brand light comes back as a tinted soft shadow, not a neon halo: unread cards,
+ * and the decorative tiles v1 cut (each in its own accent, through currentColor). Dark unread cards
+ * get a mint top highlight and a faint mint ambient.
+ * ---------------------------------------------------------------------------------------------- */
+@layer elevation-proposal.v2-state {
+  :root:has([data-elevation-proposal='v2b']) [class~='bg-mint/[0.05]'][class~='shadow-glow-md-mint'] {
+    --tw-shadow: var(--brand-light);
+  }
+  :root[data-theme='light']:has([data-elevation-proposal='v2b']) :is(
+    [class*='shadow-glow-sm-'][class*='text-'][class*='-ink']:not([class~='bg-mint-soft'][class~='border-mint/40']:not([class~='text-mint-ink'])),
+    [class*='shadow-glow-md-'][class*='text-'][class*='-ink']:not([class~='border-mint'], [class~='border-mint/40'], [class~='border-mint/35'], [class~='border-mint/45'], [class~='border-mint/50'], [class~='ring-mint'])
+  ) {
+    --tw-shadow: 0 6px 16px -8px color-mix(in srgb, currentColor 45%, transparent);
+  }
+}
+
+/* The system asks for more contrast: borders come back, at a strength that meets 3:1 for an input,
+   and cards keep a visible edge. (Forced colours need nothing: v2 leaves the borders in place,
+   transparent, and forced-colours mode paints every border in the system colour.) */
+@media (prefers-contrast: more) {
+  :root:has([data-elevation-proposal^='v2']) :is([class~='border-input'], :is(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea)[class~='border']) {
+    border-color: color-mix(in srgb, var(--foreground) 55%, transparent);
+  }
+  :root:has([data-elevation-proposal^='v2']) [class~='border']:is([class~='border-border'], [class~='border-border-strong']):not([class~='border-dashed']) {
+    border-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  }
+}

@@ -281,6 +281,12 @@
 ) {
   --tw-shadow: 0 0 #0000;
 }
+/* Unread in a compact list (the Inbox popover): no coloured stripe down the left of a rounded row;
+   the wash and the full-strength preview text say unread, as the Inbox page's cards do with their
+   wash and edge. */
+:root:has([data-elevation-proposal]) [class~='border-l-2']:is([class~='border-mint'], [class~='border-border-strong']):is([class~='bg-mint/[0.06]'], [class~='bg-foreground/[0.04]']) {
+  border-left-width: 0;
+}
 /* Unread keeps its mint edge and wash; the edge carries what the halo did. */
 :root:has([data-elevation-proposal]) [class~='bg-mint/[0.05]'][class~='shadow-glow-md-mint'] {
   border-color: color-mix(in srgb, var(--mint) 45%, transparent);
