@@ -84,6 +84,7 @@ new-session button's extra drop shadow.
 | 9 | One active-tab indicator | Editor tabs: cyan top line; Terminal tabs: mint bottom line | small |
 | 10 | Snap arbitrary radii outside approved designs | `rounded-[10px]` ×39, `[9px]` ×12, `[4px]`/`[5px]` ×14, `[14px]` ×6 | medium |
 | 11 | Two border strengths per accent | mint borders at 20/25/30/35/40/45/50/60% | wide, low priority |
+| 12 | A selected Bot's halo is cut off on the right | in the sidebar strip, the next item (Add, or the next Bot) paints over the selected avatar's halo, leaving a straight edge (`system/elevation/bots-selected-pm-before`) | small |
 
 ## Implementation (after decisions)
 

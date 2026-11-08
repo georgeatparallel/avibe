@@ -50,7 +50,7 @@
 /* Precedence follows the families, not selector weight: a level, then the floating recipe, then
    the live glows, then Light's decorative cut, then state, which always wins. The layers come after
    Tailwind's own, so each also outranks the utility it stands in for. */
-@layer elevation-proposal.level, elevation-proposal.recipe, elevation-proposal.live, elevation-proposal.decor, elevation-proposal.state;
+@layer elevation-proposal.level, elevation-proposal.recipe, elevation-proposal.live, elevation-proposal.decor, elevation-proposal.state, elevation-proposal.hover;
 
 @layer elevation-proposal.level {
 /* The proposed utilities, as they would be generated from `--shadow-elevation-*`. */
@@ -289,5 +289,18 @@
    growing a bigger one (Light has none, see the decorative cut). */
 :root[data-theme='dark']:has([data-elevation-proposal]) [class~='border-cyan'][class~='shadow-glow-md-cyan'][class~='bg-cyan-soft'] {
   --tw-shadow: 0 0 16px -4px rgba(63, 224, 229, 0.44);
+}
+}
+
+@layer elevation-proposal.hover {
+/* Other fix #1 (docs/plans/elevation-system.md), previewed here: `hover:bg-surface-2` paints white on
+   white in Light, where --surface, --surface-2, --card and --popover are all #fff, so a ghost button
+   on a dialog or a list row on a card shows no hover. The proposal washes the foreground over
+   whatever the element rests on: 4% under the pointer, 6% pressed, the pair most of the tree uses. */
+:root:has([data-elevation-proposal]) :is([class~='hover:bg-surface-2'], [class~='hover:bg-surface-1']):hover {
+  background-image: linear-gradient(color-mix(in srgb, var(--foreground) 4%, transparent), color-mix(in srgb, var(--foreground) 4%, transparent));
+}
+:root:has([data-elevation-proposal]) [class~='active:bg-surface-2']:active {
+  background-image: linear-gradient(color-mix(in srgb, var(--foreground) 6%, transparent), color-mix(in srgb, var(--foreground) 6%, transparent));
 }
 }

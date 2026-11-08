@@ -69,6 +69,20 @@ const toastFrame = {
   click: ['role=button[name="{t:backendLifecycle.statusReady}"]', 'role=button[name="{t:backendLifecycle.restart}"]'],
 };
 
+// Review pairs that need a state the shipped frames do not hold: a Bot selected in the strip, and a
+// hover in Light. `before` is the shipped frame with that state added; `after` adds the proposal.
+const variant = (spec: FrameSpec, name: string, title: string, extra: Partial<FrameSpec>): [FrameSpec, FrameSpec] => {
+  const before: FrameSpec = { ...spec, ...extra, name: `${name}-before`, title: `现状 · ${title}`, status: 'shipped' };
+  return [before, { ...before, name, title: `提案 · ${title}（对照 system/elevation/${name}-before）`, status: 'proposed', render: () => <ElevationProposal>{spec.render()}</ElevationProposal> }];
+};
+const mainOpen = shipped('sidebar/bots', sidebarBots, 'main-open');
+const reviewFrames: FrameSpec[] = [
+  ...variant(mainOpen, 'bots-selected-main', '伙伴条 · 在歪比的对话里（歪比选中）', {}),
+  ...variant(mainOpen, 'bots-selected-pm', '伙伴条 · 在产品经理的对话里（产品经理选中，首席安全官有未读）', { route: '/chat/ses_pm' }),
+  ...variant(shipped('system/overlays', overlays, 'dialog'), 'hover-dialog-ghost', '悬停 · 对话框里的「取消」（ghost 按钮）', { hover: 'role=button[name="取消"]' }),
+  ...variant(shipped('agents/agents-page', agentsPage, 'definitions'), 'hover-agents-row', '悬停 · Agents 列表行（docs-writer）', { hover: 'button:has-text("docs-writer")' }),
+];
+
 const designFrames = frames([
   {
     name: 'scale',
@@ -117,6 +131,8 @@ const designFrames = frames([
   after('phone-apps-drawer', 'mobile/apps-drawer', appsDrawer, 'open'),
   after('phone-menu', 'system/overlays', overlays, 'menu-phone'),
   after('phone-dialog', 'system/overlays', overlays, 'dialog-phone'),
+
+  ...reviewFrames,
 ]);
 
 export default designFrames;
