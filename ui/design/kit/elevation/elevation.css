@@ -1,0 +1,293 @@
+/* Proposed elevation system (ui/design: system/elevation/*). Not shipped.
+ *
+ * Every rule is gated on `:root:has([data-elevation-proposal])`: it applies only in a frame that
+ * draws its page inside <ElevationProposal>, so the shipped frames and the canvas around them are
+ * untouched. A rule here stands in for a class change in one component; when the owner approves,
+ * the tokens below move into `src/index.css` (one value per palette, the way `--card-wash` does)
+ * and each component switches to its level's utility, and this file is deleted.
+ *
+ * Overrides set `--tw-shadow`, the part of Tailwind's composed box-shadow a `shadow-*` utility owns,
+ * so a ring drawn on the same element (focus, a live microphone's edge) survives.
+ *
+ * Three families, kept apart:
+ * - Elevation: a shadow says how high a surface sits above the page, nothing else.
+ *     0 flat     page content: cards, rows, panels, inputs (border + fill, no shadow)
+ *     1 raised   stays on the page but above its neighbours: the composer, a segmented thumb
+ *     2 floating anchored to a trigger, non-modal: popover, menu, hover card, toast, Dock
+ *     3 overlay  modal or window-sized: dialog, sheet, drawer, search palette, focused window
+ *   Floating and overlay surfaces share one recipe: `--popover` fill, `--border-strong` edge, the
+ *   level's shadow. Dark lifts `--popover` one step so the surface, not a black smear, separates it.
+ * - State: selected, unread, active, expanded. Fill, border, ring. Never a shadow, never a glow.
+ * - Light: a glow means something emits light. Live status (a running dot, a live microphone),
+ *   the one brand CTA, and brand marks. Live glows take the theme's own accent; decorative ones
+ *   (icon tiles, logo, eyebrow) stay in Dark and are dropped in Light, where neon reads as blur. */
+
+:root:has([data-elevation-proposal]),
+:root:has([data-elevation-proposal]) [data-theme] {
+  --elevation-1: 0 1px 2px rgb(0 0 0 / 0.45);
+  --elevation-2: 0 2px 6px -2px rgb(0 0 0 / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  --elevation-3: 0 4px 12px -4px rgb(0 0 0 / 0.5), 0 24px 64px -12px rgb(0 0 0 / 0.7);
+  /* A sheet rising from the bottom edge casts upward. */
+  --elevation-3-up: 0 -2px 8px -4px rgb(0 0 0 / 0.4), 0 -16px 40px -12px rgb(0 0 0 / 0.6);
+  /* Dark floating fill: one step above --card (#11111c), below --nav-hover-bg (#1a1a26). */
+  --popover: #161622;
+  /* Live glows, in the theme's own accent. */
+  --live-dot: 8px;
+  --live-alpha: 90%;
+}
+
+:root[data-theme='light']:has([data-elevation-proposal]),
+:root:has([data-elevation-proposal]) [data-theme='light'] {
+  --elevation-1: 0 1px 2px rgb(8 8 18 / 0.06), 0 1px 3px rgb(8 8 18 / 0.05);
+  --elevation-2: 0 2px 6px -2px rgb(8 8 18 / 0.08), 0 10px 28px -6px rgb(8 8 18 / 0.14);
+  --elevation-3: 0 4px 12px -4px rgb(8 8 18 / 0.1), 0 24px 56px -12px rgb(8 8 18 / 0.22);
+  --elevation-3-up: 0 -1px 4px -2px rgb(8 8 18 / 0.06), 0 -12px 32px -12px rgb(8 8 18 / 0.16);
+  --popover: #ffffff;
+  --live-dot: 6px;
+  --live-alpha: 60%;
+}
+
+/* Precedence follows the families, not selector weight: a level, then the floating recipe, then
+   the live glows, then Light's decorative cut, then state, which always wins. The layers come after
+   Tailwind's own, so each also outranks the utility it stands in for. */
+@layer elevation-proposal.level, elevation-proposal.recipe, elevation-proposal.live, elevation-proposal.decor, elevation-proposal.state;
+
+@layer elevation-proposal.level {
+/* The proposed utilities, as they would be generated from `--shadow-elevation-*`. */
+:root:has([data-elevation-proposal]) .shadow-elevation-1 { box-shadow: var(--elevation-1); }
+:root:has([data-elevation-proposal]) .shadow-elevation-2 { box-shadow: var(--elevation-2); }
+:root:has([data-elevation-proposal]) .shadow-elevation-3 { box-shadow: var(--elevation-3); }
+:root:has([data-elevation-proposal]) .shadow-elevation-3-up { box-shadow: var(--elevation-3-up); }
+:root:has([data-elevation-proposal]) .surface-floating {
+  background-color: var(--popover);
+  border-color: var(--border-strong);
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Level 0: flat. Inputs, outline buttons, page cards, card washes.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) :is(
+  [class~='border-input'][class~='shadow-sm'],
+  [class~='shadow-[0_1px_2px_rgba(0,0,0,0.05)]'],
+  [class~='shadow-mint/5'],
+  [class~='shadow-mint-card-sm'],
+  [class~='shadow-mint-card'],
+  [class~='shadow-mint-card-lg'],
+  [class~='shadow-[0_18px_40px_-30px_rgba(0,0,0,0.8)]'],
+  [class~='shadow-[0_16px_32px_-8px_rgba(91,255,160,0.078)]'],
+  [class~='shadow-[0_24px_48px_-30px_rgba(91,255,160,0.20)]'],
+  [class~='shadow-[0_8px_24px_-8px_rgba(0,212,255,0.35)]']
+) {
+  --tw-shadow: 0 0 #0000;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Level 1: raised.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) :is(
+  [class~='shadow-sm']:not([class~='border-input'], [class~='shadow-mint/5']),
+  [class~='shadow-[0_-4px_24px_-12px_rgba(0,0,0,0.5)]'],
+  [class~='shadow-[0_1px_3px_rgba(0,0,0,0.15),0_4px_8px_rgba(0,0,0,0.1)]'],
+  [class~='shadow-[0_1px_4px_rgba(0,0,0,0.5)]'],
+  /* The setup wizard's one centred panel. */
+  [class~='sm:shadow-mint-card-lg']
+) {
+  --tw-shadow: var(--elevation-1);
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Level 2: floating. Every popover, menu, hover card, tooltip, toast, the Dock, an unfocused window.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) :is(
+  [class~='shadow-md']:not([class~='border-accent']),
+  [class~='shadow-lg'],
+  [class~='shadow-xl'],
+  [class~='shadow-[0_24px_64px_-12px_rgba(0,0,0,0.65)]'],
+  [class~='shadow-[0_16px_40px_-16px_rgba(0,0,0,0.6)]'],
+  [class~='shadow-[0_12px_30px_-8px_rgba(0,0,0,0.7)]'],
+  [class~='shadow-[0_24px_64px_-12px_rgba(0,0,0,0.6)]'],
+  [class~='shadow-[var(--model-hub-menu-shadow)]']
+) {
+  --tw-shadow: var(--elevation-2);
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Level 3: overlay. Dialogs (the primitive and the bespoke ones), the search palette, drawers,
+ * the image viewer, a focused window. Sheets rising from the bottom cast upward.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) :is(
+  .motion-dialog,
+  .motion-card,
+  [class~='shadow-2xl']:not(.motion-sheet),
+  [class~='shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)]'],
+  [class~='shadow-[0_24px_64px_-12px_rgba(0,0,0,0.7)]'],
+  [class~='shadow-[0_28px_60px_-12px_rgba(0,0,0,0.7)]'],
+  [class~='shadow-[0_32px_80px_-16px_rgba(0,0,0,0.75)]'],
+  [class~='shadow-[0_42px_80px_-42px_rgba(0,0,0,0.85)]'],
+  [class~='shadow-[0_24px_48px_-6px_rgba(0,0,0,0.8),var(--shadow-glow-lg-violet)]'],
+  [class~='shadow-[var(--model-hub-dialog-shadow)]']
+) {
+  --tw-shadow: var(--elevation-3);
+}
+}
+
+@layer elevation-proposal.recipe {
+/* The floating recipe: one fill and one edge for every anchored surface. Today the same role is
+   drawn on six fills (bg-panel, bg-card, bg-popover, bg-surface, bg-surface-2, and bg-surface-3,
+   which is darker than the page in Dark and grey in Light). */
+:root:has([data-elevation-proposal]) :is(
+  .motion-popover:not([class*='border-gold']),
+  [role='menu'][class~='shadow-[0_12px_30px_-8px_rgba(0,0,0,0.7)]'],
+  [role='menu'][class~='shadow-xl'],
+  [role='listbox'][class~='shadow-xl'],
+  [role='listbox'][class~='shadow-md'],
+  [role='listbox'][class~='shadow-lg']
+) {
+  background-color: var(--popover);
+  border-color: var(--border-strong);
+  --tw-shadow: var(--elevation-2);
+}
+
+/* A toast floats over whatever is under it, so it is opaque: the floating fill with its tone
+   washed over it. Today it is a 10% tint with the page showing through. */
+:root:has([data-elevation-proposal]) [role='status'][class~='shadow-lg'][class~='bg-mint/10'] {
+  background-color: var(--popover);
+  background-image: linear-gradient(color-mix(in srgb, var(--mint) 10%, transparent), color-mix(in srgb, var(--mint) 10%, transparent));
+}
+:root:has([data-elevation-proposal]) [role='status'][class~='shadow-lg'][class~='bg-gold/10'] {
+  background-color: var(--popover);
+  background-image: linear-gradient(color-mix(in srgb, var(--gold) 10%, transparent), color-mix(in srgb, var(--gold) 10%, transparent));
+}
+:root:has([data-elevation-proposal]) [role='status'][class~='shadow-lg'][class~='bg-destructive/10'] {
+  background-color: var(--popover);
+  background-image: linear-gradient(color-mix(in srgb, var(--destructive) 10%, transparent), color-mix(in srgb, var(--destructive) 10%, transparent));
+}
+
+:root:has([data-elevation-proposal]) :is(
+  .motion-dialog,
+  .motion-card,
+  [class~='shadow-[0_32px_80px_-16px_rgba(0,0,0,0.75)]']
+) {
+  background-color: var(--popover);
+  border-color: var(--border-strong);
+}
+:root:has([data-elevation-proposal]) :is(.motion-sheet, [class~='shadow-[0_-16px_40px_-12px_rgba(0,0,0,0.55)]']) {
+  --tw-shadow: var(--elevation-3-up);
+}
+/* A phone shows the dialog as a sheet from the bottom edge. */
+@media (max-width: 767px) {
+  :root:has([data-elevation-proposal]) .motion-dialog {
+    --tw-shadow: var(--elevation-3-up);
+  }
+}
+}
+
+@layer elevation-proposal.live {
+/* ------------------------------------------------------------------------------------------------
+ * Light: live glows in the theme's own accent; decorative glows only in Dark.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) [class~='shadow-glow-dot-mint'] {
+  --tw-shadow: 0 0 var(--live-dot) color-mix(in srgb, var(--mint) var(--live-alpha), transparent);
+}
+:root:has([data-elevation-proposal]) [class~='shadow-glow-dot-gold'] {
+  --tw-shadow: 0 0 var(--live-dot) color-mix(in srgb, var(--gold) var(--live-alpha), transparent);
+}
+:root:has([data-elevation-proposal]) [class~='shadow-glow-dot-destructive'] {
+  --tw-shadow: 0 0 var(--live-dot) color-mix(in srgb, var(--destructive) var(--live-alpha), transparent);
+}
+
+/* A live microphone (holding a Bot, the voice card, the main Bot's centre button) keeps its glow,
+   in the palette's mint. */
+:root[data-theme='light']:has([data-elevation-proposal]) [class~='shadow-glow-md-mint'] {
+  --tw-shadow: 0 0 24px -6px color-mix(in srgb, var(--mint) 44%, transparent);
+}
+:root[data-theme='light']:has([data-elevation-proposal]) [class~='shadow-glow-lg-mint'] {
+  --tw-shadow: 0 0 32px -8px color-mix(in srgb, var(--mint) 44%, transparent);
+}
+:root[data-theme='light']:has([data-elevation-proposal]) [class~='shadow-glow-xl-mint'] {
+  --tw-shadow: 0 0 48px -12px color-mix(in srgb, var(--mint) 44%, transparent);
+}
+
+/* A floating voice card that is listening is floating and live at once: both. */
+:root:has([data-elevation-proposal]) :is([class~='shadow-xl'], [class~='shadow-md'])[class~='shadow-glow-md-mint'] {
+  --tw-shadow: var(--elevation-2), 0 0 24px -6px color-mix(in srgb, var(--mint) 44%, transparent);
+}
+
+/* The phone tab bar's new-session button wore its own neon drop shadow on top of the brand
+   button's glow; it keeps only the brand glow. */
+:root:has([data-elevation-proposal]) [class~='shadow-[0_8px_20px_-4px_rgba(91,255,160,0.6)]'] {
+  --tw-shadow: 0 0 var(--brand-glow-blur) -4px rgba(91, 255, 160, 0.6);
+}
+}
+
+@layer elevation-proposal.decor {
+/* Decorative: page and panel icon tiles, the logo, eyebrow badges, the Apps launcher. Dark keeps
+   them; Light drops them. */
+:root[data-theme='light']:has([data-elevation-proposal]) :is(
+  [class*='shadow-glow-sm-'][class*='text-'][class*='-ink'],
+  [class*='shadow-glow-md-'][class*='text-'][class*='-ink']:not([class~='border-mint'], [class~='border-mint/40'], [class~='border-mint/35'], [class~='ring-mint']),
+  [class*='shadow-glow-lg-'][class*='text-'][class*='-ink'],
+  [class*='shadow-glow-xl-'][class*='text-'][class*='-ink'],
+  img[class~='shadow-glow-sm-mint'],
+  img[class~='shadow-glow-sm-mint']:hover,
+  [class~='bg-cyan-soft'][class~='shadow-glow-sm-cyan'],
+  [class~='bg-cyan-soft'][class~='shadow-glow-md-cyan']
+) {
+  --tw-shadow: 0 0 #0000;
+}
+:root[data-theme='light']:has([data-elevation-proposal]) .group:hover img[class~='shadow-glow-sm-mint'] {
+  --tw-shadow: 0 0 #0000;
+}
+}
+
+@layer elevation-proposal.state {
+/* ------------------------------------------------------------------------------------------------
+ * State: no shadow and no glow. Selected rows take the approved nav tokens (--nav-selected-*),
+ * which are defined today and used nowhere.
+ * ---------------------------------------------------------------------------------------------- */
+:root:has([data-elevation-proposal]) :is(
+  /* Sidebar nav row, selected. */
+  [class~='border-mint/30'][class~='bg-mint/[0.08]'][class~='shadow-glow-sm-mint']:not([class~='text-mint-ink'])
+) {
+  background-color: var(--nav-selected-bg);
+  border-color: var(--nav-selected-border);
+  --tw-shadow: 0 0 #0000;
+}
+:root:has([data-elevation-proposal]) :is(
+  /* Agents, Skills, and MCP rows, selected. */
+  [class~='border-mint/40'][class~='bg-mint-soft'][class~='shadow-glow-sm-mint']:not([class~='text-mint-ink']),
+  /* Sidebar rail icon (Inbox), active. */
+  [class~='border-cyan/40'][class~='bg-cyan-soft'][class~='shadow-glow-sm-cyan']:not([class~='text-cyan-ink']),
+  /* Agent graph node and trigger, selected. */
+  [class~='border-mint/70'][class~='shadow-glow-md-mint'],
+  [class~='border-violet'][class~='shadow-glow-md-violet'],
+  /* Segmented and filter controls, active; a switch that is on; a shortcut being recorded. */
+  [class~='shadow-glow-xs-mint'],
+  /* Inbox card, unread. */
+  [class~='bg-mint/[0.05]'][class~='shadow-glow-md-mint'],
+  /* Expanded and enabled config cards. */
+  [class~='bg-surface-2/70'][class~='shadow-glow-lg-mint'],
+  [class~='border-mint/40'][class~='shadow-glow-md-mint']:not([class~='bg-surface-2'], [class~='rounded-2xl'], [class~='rounded-3xl']),
+  [class~='border-mint/45'][class~='shadow-glow-md-mint'],
+  [class~='border-mint/50'][class~='shadow-glow-md-mint'],
+  /* Annotate toggle, on. */
+  [class~='bg-mint/[0.06]'][class~='shadow-glow-sm-mint'],
+  /* Unread counts: a count is information, not a light. */
+  [class~='bg-cyan'][class~='shadow-glow-xs-cyan'],
+  /* Setup mode card, selected. */
+  [class~='border-accent'][class~='shadow-md'],
+  /* A card that wears a glow to stand out. */
+  [class~='bg-cyan/[0.06]'][class~='shadow-glow-lg-cyan']
+) {
+  --tw-shadow: 0 0 #0000;
+}
+/* Unread keeps its mint edge and wash; the edge carries what the halo did. */
+:root:has([data-elevation-proposal]) [class~='bg-mint/[0.05]'][class~='shadow-glow-md-mint'] {
+  border-color: color-mix(in srgb, var(--mint) 45%, transparent);
+}
+/* The Apps launcher: open is a state, so in Dark it keeps the glow it rests with rather than
+   growing a bigger one (Light has none, see the decorative cut). */
+:root[data-theme='dark']:has([data-elevation-proposal]) [class~='border-cyan'][class~='shadow-glow-md-cyan'][class~='bg-cyan-soft'] {
+  --tw-shadow: 0 0 16px -4px rgba(63, 224, 229, 0.44);
+}
+}
